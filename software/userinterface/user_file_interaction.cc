@@ -30,8 +30,17 @@ int UserFileInteraction::fetch_context_items(BrowsableDirEntry *br, IndexedList<
         count++;
     }
     if ((info->size <= 262144) && (!(info->attrib & AM_DIR))) {
-        list.append(new Action("View", UserFileInteraction::S_view, 0));
-        count++;
+        bool hasViewAction = false;
+        for(int i=0;i<list.get_elements();i++) {
+            if(strcmp(list[i]->getName(), "View") == 0) {
+                hasViewAction = true;
+                break;
+            }
+        }
+        if(!hasViewAction) {
+            list.append(new Action("View", UserFileInteraction :: S_view, 0));
+            count++;
+        }
     }
     if (info->is_writable()) {
         list.append(new Action("Rename", UserFileInteraction::S_rename, 0));
