@@ -1,5 +1,8 @@
 #include "w25q_flash.h"
 #include "icap.h"
+#include "miniz.h"
+#include "bspatch.h"
+
 extern "C" {
     #include "small_printf.h"
 }
@@ -25,78 +28,68 @@ W25Q_Flash w25q_flash;
 // CUSTOM FPGA is thus on sector 12.. 
 
 static const t_flash_address flash_addresses[] = {
-	{ FLASH_ID_BOOTFPGA,   0x01, 0x000000, 0x000000, 0x53CA0 },
-	{ FLASH_ID_BOOTAPP,    0x01, 0x054000, 0x054000, 0x0C000 }, // 192 pages (48K)
+    { FLASH_ID_BOOTFPGA,   0x01, 0x000000, 0x000000, 0x53CA0, 0, 0 },
+	{ FLASH_ID_BOOTAPP,    0x01, 0x054000, 0x054000, 0x0C000, 0, 0 }, // 192 pages (48K)
 
-	{ FLASH_ID_AR5PAL,     0x00, 0x060000, 0x060000, 0x08000 },
-	{ FLASH_ID_AR6PAL,     0x00, 0x068000, 0x068000, 0x08000 },
-	{ FLASH_ID_FINAL3,     0x00, 0x070000, 0x070000, 0x10000 },
-	{ FLASH_ID_KCS,        0x00, 0x080000, 0x080000, 0x04000 }, //0x84000-8A000 free (24K)
-	{ FLASH_ID_EPYX,       0x00, 0x08A000, 0x08A000, 0x02000 }, //0x8C000-90000 free (16K)
-	{ FLASH_ID_RR38PAL,    0x00, 0x090000, 0x090000, 0x10000 },
-	{ FLASH_ID_SS5PAL,     0x00, 0x0A0000, 0x0A0000, 0x10000 },
-	{ FLASH_ID_AR5NTSC,    0x00, 0x0B0000, 0x0B0000, 0x08000 }, // B8000-C0000 free (32K)
-	{ FLASH_ID_RR38NTSC,   0x00, 0x0C0000, 0x0C0000, 0x10000 },
-	{ FLASH_ID_SS5NTSC,    0x00, 0x0D0000, 0x0D0000, 0x10000 },
-	{ FLASH_ID_TAR_PAL,    0x00, 0x0E0000, 0x0E0000, 0x10000 },
-	{ FLASH_ID_TAR_NTSC,   0x00, 0x0F0000, 0x0F0000, 0x10000 },
+	{ FLASH_ID_AR5PAL,     0x00, 0x060000, 0x060000, 0x08000, 0, 0 },
+	{ FLASH_ID_AR6PAL,     0x00, 0x068000, 0x068000, 0x08000, 0, 0 },
+	{ FLASH_ID_FINAL3,     0x00, 0x070000, 0x070000, 0x10000, 0, 0 },
+	{ FLASH_ID_KCS,        0x00, 0x080000, 0x080000, 0x04000, 0, 0 }, //0x84000-8A000 free (24K)
+	{ FLASH_ID_EPYX,       0x00, 0x08A000, 0x08A000, 0x02000, 0, 0 }, //0x8C000-90000 free (16K)
+	{ FLASH_ID_RR38PAL,    0x00, 0x090000, 0x090000, 0x10000, 0, 0 },
+	{ FLASH_ID_SS5PAL,     0x00, 0x0A0000, 0x0A0000, 0x10000, 0, 0 },
+	{ FLASH_ID_AR5NTSC,    0x00, 0x0B0000, 0x0B0000, 0x08000, 0, 0 }, // B8000-C0000 free (32K)
+	{ FLASH_ID_RR38NTSC,   0x00, 0x0C0000, 0x0C0000, 0x10000, 0, 0 },
+	{ FLASH_ID_SS5NTSC,    0x00, 0x0D0000, 0x0D0000, 0x10000, 0, 0 },
+	{ FLASH_ID_TAR_PAL,    0x00, 0x0E0000, 0x0E0000, 0x10000, 0, 0 },
+	{ FLASH_ID_TAR_NTSC,   0x00, 0x0F0000, 0x0F0000, 0x10000, 0, 0 },
 
-	{ FLASH_ID_APPL,       0x01, 0x100000, 0x100000, 0xC0000 }, // max size: 768K
-	{ FLASH_ID_CUSTOM_ROM, 0x00, 0x1C0000, 0x1C0000, 0x20000 }, // max size: 128K
-	{ FLASH_ID_KERNAL_ROM, 0x00, 0x1E0000, 0x1E0000, 0x02000 },
-	{ FLASH_ID_CUSTOM_DRV, 0x00, 0x1E2000, 0x1E2000, 0x08000 }, // free: 1ea000-1f0000
-	{ FLASH_ID_CONFIG,     0x00, 0x1F0000, 0x1F0000, 0x10000 },
-	{ FLASH_ID_LIST_END,   0x00, 0x1FE000, 0x1FE000, 0x01000 } };
+	{ FLASH_ID_APPL,       0x01, 0x100000, 0x100000, 0xC0000, 0, 0 }, // max size: 768K
+	{ FLASH_ID_CUSTOM_ROM, 0x00, 0x1C0000, 0x1C0000, 0x20000, 0, 0 }, // max size: 128K
+	{ FLASH_ID_KERNAL_ROM, 0x00, 0x1E0000, 0x1E0000, 0x02000, 0, 0 },
+	{ FLASH_ID_CUSTOM_DRV, 0x00, 0x1E2000, 0x1E2000, 0x08000, 0, 0 }, // free: 1ea000-1f0000
+	{ FLASH_ID_CONFIG,     0x00, 0x1F0000, 0x1F0000, 0x10000, 0, 0 },
+	{ FLASH_ID_LIST_END,   0x00, 0x1FE000, 0x1FE000, 0x01000, 0, 0 } };
 
 
 static const t_flash_address flash_addresses_u2p[] = {
-	{ FLASH_ID_BOOTFPGA,   0x01, 0x000000, 0x000000, 0xC0000  },
-	{ FLASH_ID_APPL,       0x01, 0x0C0000, 0x0C0000, 0x140000 }, // Max 1.25 MB
+	{ FLASH_ID_BOOTFPGA,   0x01, 0x000000, 0x000000, 0xC0000,  0, 0 },
+	{ FLASH_ID_APPL,       0x01, 0x0C0000, 0x0C0000, 0x140000, 0, 0 }, // Max 1.25 MB
 
-	{ FLASH_ID_AR5PAL,     0x00, 0x200000, 0x200000, 0x08000 },
-	{ FLASH_ID_AR6PAL,     0x00, 0x208000, 0x208000, 0x08000 },
-	{ FLASH_ID_FINAL3,     0x00, 0x210000, 0x210000, 0x10000 },
-	{ FLASH_ID_RR38PAL,    0x00, 0x220000, 0x220000, 0x10000 },
-	{ FLASH_ID_RR38NTSC,   0x00, 0x230000, 0x230000, 0x10000 },
-	{ FLASH_ID_TAR_PAL,    0x00, 0x240000, 0x240000, 0x10000 },
-	{ FLASH_ID_TAR_NTSC,   0x00, 0x250000, 0x250000, 0x10000 },
-	{ FLASH_ID_SS5PAL,     0x00, 0x260000, 0x260000, 0x10000 },
-	{ FLASH_ID_SS5NTSC,    0x00, 0x270000, 0x270000, 0x10000 },
-	{ FLASH_ID_AR5NTSC,    0x00, 0x280000, 0x280000, 0x08000 },
-	{ FLASH_ID_KCS,        0x00, 0x288000, 0x288000, 0x04000 },
-	{ FLASH_ID_EPYX,       0x00, 0x28C000, 0x28C000, 0x02000 },
-	{ FLASH_ID_KERNAL_ROM, 0x00, 0x28E000, 0x28E000, 0x02000 },
-	{ FLASH_ID_CUSTOM_DRV, 0x00, 0x290000, 0x290000, 0x08000 },
-	{ FLASH_ID_CUSTOM_ROM, 0x00, 0x298000, 0x298000, 0x20000 }, // max size: 128K, free 0x2b8000-0x3f0000
+#include "rom_pack_addresses_u2p.h"
+    
+	{ FLASH_ID_KERNAL_ROM, 0x00, 0x28E000, 0x28E000, 0x02000, 0, 0 },
+	{ FLASH_ID_CUSTOM_DRV, 0x00, 0x290000, 0x290000, 0x08000, 0, 0 },
+	{ FLASH_ID_CUSTOM_ROM, 0x00, 0x298000, 0x298000, 0x20000, 0, 0 }, // max size: 128K, free 0x2b8000-0x3f0000
 
-	{ FLASH_ID_CONFIG,     0x00, 0x3F0000, 0x3F0000, 0x10000 },
-	{ FLASH_ID_LIST_END,   0x00, 0x3FE000, 0x3FE000, 0x01000 } };
+	{ FLASH_ID_CONFIG,     0x00, 0x3F0000, 0x3F0000, 0x10000, 0, 0 },
+	{ FLASH_ID_LIST_END,   0x00, 0x3FE000, 0x3FE000, 0x01000, 0, 0 } };
 
 
 static const t_flash_address flash_addresses_u64[] = {
-	{ FLASH_ID_BOOTFPGA,   0x01, 0x000000, 0x000000, 0x298000 }, // 282BD4
-	{ FLASH_ID_APPL,       0x01, 0x290000, 0x290000, 0x0E8000 }, // Max 0.9 MB
+	{ FLASH_ID_BOOTFPGA,   0x01, 0x000000, 0x000000, 0x298000, 0, 0 }, // 282BD4
+	{ FLASH_ID_APPL,       0x01, 0x290000, 0x290000, 0x0E8000, 0, 0 }, // Max 0.9 MB
 
-	{ FLASH_ID_AR5PAL,     0x00, 0x380000, 0x380000, 0x08000 },
-	{ FLASH_ID_AR6PAL,     0x00, 0x388000, 0x388000, 0x08000 },
-	{ FLASH_ID_FINAL3,     0x00, 0x390000, 0x390000, 0x10000 },
-	{ FLASH_ID_RR38PAL,    0x00, 0x3A0000, 0x3A0000, 0x10000 },
-	{ FLASH_ID_SS5PAL,     0x00, 0x3B0000, 0x3B0000, 0x10000 },
-	{ FLASH_ID_KCS,        0x00, 0x3C0000, 0x3C0000, 0x04000 },
-	{ FLASH_ID_EPYX,       0x00, 0x3C4000, 0x3C4000, 0x02000 },
-	{ FLASH_ID_KERNAL_ROM, 0x00, 0x3C6000, 0x3C6000, 0x02000 },
-	{ FLASH_ID_CUSTOM_DRV, 0x00, 0x3C8000, 0x3C8000, 0x08000 },
-	{ FLASH_ID_CUSTOM_ROM, 0x00, 0x3D0000, 0x3D0000, 0x20000 }, // max size: 128K
+	{ FLASH_ID_AR5PAL,     0x00, 0x380000, 0x380000, 0x08000, 0, 0 },
+	{ FLASH_ID_AR6PAL,     0x00, 0x388000, 0x388000, 0x08000, 0, 0 },
+	{ FLASH_ID_FINAL3,     0x00, 0x390000, 0x390000, 0x10000, 0, 0 },
+	{ FLASH_ID_RR38PAL,    0x00, 0x3A0000, 0x3A0000, 0x10000, 0, 0 },
+	{ FLASH_ID_SS5PAL,     0x00, 0x3B0000, 0x3B0000, 0x10000, 0, 0 },
+	{ FLASH_ID_KCS,        0x00, 0x3C0000, 0x3C0000, 0x04000, 0, 0 },
+	{ FLASH_ID_EPYX,       0x00, 0x3C4000, 0x3C4000, 0x02000, 0, 0 },
+	{ FLASH_ID_KERNAL_ROM, 0x00, 0x3C6000, 0x3C6000, 0x02000, 0, 0 },
+	{ FLASH_ID_CUSTOM_DRV, 0x00, 0x3C8000, 0x3C8000, 0x08000, 0, 0 },
+	{ FLASH_ID_CUSTOM_ROM, 0x00, 0x3D0000, 0x3D0000, 0x20000, 0, 0 }, // max size: 128K
 
-//	{ FLASH_ID_TAR_PAL,    0x00, 0x3B0000, 0x3B0000, 0x10000 },
-//	{ FLASH_ID_RR38NTSC,   0x00, 0x330000, 0x330000, 0x10000 },
-//	{ FLASH_ID_TAR_NTSC,   0x00, 0x350000, 0x350000, 0x10000 },
-//	{ FLASH_ID_SS5NTSC,    0x00, 0x370000, 0x370000, 0x10000 },
-//	{ FLASH_ID_AR5NTSC,    0x00, 0x380000, 0x380000, 0x08000 },
+//	{ FLASH_ID_TAR_PAL,    0x00, 0x3B0000, 0x3B0000, 0x10000, 0, 0 },
+//	{ FLASH_ID_RR38NTSC,   0x00, 0x330000, 0x330000, 0x10000, 0, 0 },
+//	{ FLASH_ID_TAR_NTSC,   0x00, 0x350000, 0x350000, 0x10000, 0, 0 },
+//	{ FLASH_ID_SS5NTSC,    0x00, 0x370000, 0x370000, 0x10000, 0, 0 },
+//	{ FLASH_ID_AR5NTSC,    0x00, 0x380000, 0x380000, 0x08000, 0, 0 },
 
 
-	{ FLASH_ID_CONFIG,     0x00, 0x3F0000, 0x3F0000, 0x10000 },
-	{ FLASH_ID_LIST_END,   0x00, 0x3FE000, 0x3FE000, 0x01000 } };
+	{ FLASH_ID_CONFIG,     0x00, 0x3F0000, 0x3F0000, 0x10000, 0, 0 },
+	{ FLASH_ID_LIST_END,   0x00, 0x3FE000, 0x3FE000, 0x01000, 0, 0 } };
 
 W25Q_Flash::W25Q_Flash()
 {
@@ -109,7 +102,6 @@ W25Q_Flash::~W25Q_Flash()
 {
     debug(("W25Q Flash class destructed..\n"));
 }
-
 
 void W25Q_Flash :: get_image_addresses(int id, t_flash_address *addr)
 {
@@ -247,14 +239,70 @@ int W25Q_Flash :: read_image(int id, void *buffer, int buf_size)
 	while(a->id != FLASH_ID_LIST_END) {
 		if(int(a->id) == id) {
 			int len = (a->max_length > buf_size) ? buf_size : a->max_length;
-			read_dev_addr(a->device_addr, len, buffer);
+            
+			if(!a->uncompressed_size) {
+                printf("reading uncompressed flash image %b...\n", a->id);
+                read_dev_addr(a->device_addr, len, buffer);
+            }
+            else if(!a->base_id) {
+                printf("reading compressed flash image %b...\n", a->id);
+                inflate(a, buffer);
+            }
+            else {
+                printf("read compressed and patched flash image %b...\n", a->id);
+                inflate_patch(a, buffer);
+            }
 			return len;
 		}
 		a++;
 	}
 	return 0;
 }
+
+void W25Q_Flash :: inflate(t_flash_address *address, void *buffer)
+{    
+#ifndef RECOVERYAPP
+#ifndef BOOTLOADER  
+    uint32_t compressed_size = address->max_length;
+    uint32_t uncompressed_size = address->uncompressed_size;
     
+    uint8_t *compressed = new uint8_t[compressed_size];
+
+    read_dev_addr(address->device_addr, compressed_size, compressed);
+    mz_uncompress((uint8_t*)buffer, &uncompressed_size, compressed, compressed_size);
+
+    delete[] compressed;
+#endif
+#endif    
+}
+
+void W25Q_Flash :: inflate_patch(t_flash_address *patch_address, void *buffer)
+{
+#ifndef RECOVERYAPP
+#ifndef BOOTLOADER    
+    t_flash_address *base_address = new t_flash_address;    
+    get_image_addresses(patch_address->base_id, base_address);
+    
+    uint32_t base_size = base_address->uncompressed_size;
+    uint32_t patch_size = patch_address->uncompressed_size;
+    uint32_t buffer_size = base_size;
+    
+    uint8_t* base = new uint8_t[base_size];
+    uint8_t* patch = new uint8_t[patch_size];
+
+    inflate(base_address, base);
+    inflate(patch_address, patch);
+
+    printf("patching %b with %b...\n", base_address->id, patch_address->id);
+    bspatch(base, base_size, patch, patch_size, (uint8_t*)buffer, buffer_size);
+
+    delete[] patch;
+    delete[] base;
+    delete base_address;
+#endif
+#endif        
+}
+
 void W25Q_Flash :: read_linear_addr(int addr, int len, void *buffer)
 {
     read_dev_addr(addr, len, buffer); // linear and device address are the same
@@ -508,3 +556,4 @@ bool W25Q_Flash :: wait_ready(int time_out)
     SPI_FLASH_CTRL = SPI_FORCE_SS | SPI_LEVEL_SS;
     return ret;
 }
+

@@ -64,6 +64,8 @@ void outbyte_log(int c)
 
 extern "C" void ultimate_main(void *a)
 {
+    custom_outbyte = outbyte_log;
+    
     char time_buffer[32];
 
     uint32_t capabilities = getFpgaCapabilities();

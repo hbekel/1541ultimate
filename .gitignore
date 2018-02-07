@@ -249,3 +249,10 @@ software/6502/sidcrt/target
 *.d
 tools/dump_bus_trace
 tools/64tass/*.o
+roms/*.mz
+roms/*§*
+software/application/update_u2p/rom_pack_includes_u2p.inc
+software/io/flash/rom_pack_addresses_u2p.h
+tools/miniz
+tools/bsdiff
+tools/rompack

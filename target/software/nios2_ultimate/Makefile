@@ -30,7 +30,9 @@ SRCS_C   =	itu.c \
             sid_coeff.c \
             nios_main.c \
             alt_malloc_lock.c \
-            alt_do_ctors.c
+            alt_do_ctors.c \
+            miniz.c \
+            bspatch.c
                         
 SRCS_CC	 =  u2p_init.cc \
 			small_printf.cc \

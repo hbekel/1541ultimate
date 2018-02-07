@@ -10,7 +10,21 @@ MAKEFILE = Makefile
 # Core information
 CC  = gcc
 
+# minizip
 
+MINIZ_INCLUDE=../software/system
+MINIZ_HEADERS=$(MINIZ_INCLUDE)/miniz.h util.h
+MINIZ_SOURCES=$(MINIZ_INCLUDE)/miniz.c util.c miniz-tool.c
+
+# bsdiff
+
+BSDIFF_HEADERS=bsdiff.h util.h
+BSDIFF_SOURCES=bsdiff.c util.c bsdiff-tool.c
+
+# rompack
+ROMPACK_INCLUDE=$(MINIZ_INCLUDE)
+ROMPACK_HEADERS=$(MINIZ_INCLUDE)/miniz.h util.h
+ROMPACK_SOURCES=$(MINIZ_INCLUDE)/miniz.c util.c rompack-tool.c
 
 # --------------------------------------------------------------------------
 # Compiling
@@ -23,7 +37,19 @@ CC  = gcc
 # Binaries
 
 .PHONY:	all clean
-all:   	bin2hex hex2bin make_array make_mem makeappl promgen checksum dump_vcd dump_bus_trace dump_rtos_trace swap svf_dump
+all:   	bin2hex hex2bin make_array make_mem makeappl promgen checksum dump_vcd dump_bus_trace dump_rtos_trace swap svf_dump miniz bsdiff rompack
+
+miniz: $(MINIZ_HEADERS) $(MINIZ_SOURCES)
+	@echo $@
+	@$(CC) $(CFLAGS) -I $(MINIZ_INCLUDE) -o $@ $(MINIZ_SOURCES)
+
+bsdiff: $(BSDIFF_HEADERS) $(BSDIFF_SOURCES)
+	@echo $@
+	@$(CC) $(CFLAGS) -o $@ $(BSDIFF_SOURCES)
+
+rompack: $(ROMPACK_HEADERS) $(ROMPACK_SOURCES)
+	@echo $@
+	@$(CC) $(CFLAGS) -I $(ROMPACK_INCLUDE) -o $@ $(ROMPACK_SOURCES)
 
 ifneq ($(SYSTEMDRIVE), C:)
 #	echo $(SYSTEMDRIVE)
@@ -57,6 +83,9 @@ clean:
 	@rm -f svf_dump.exe
 	@rm -f 64tass/64tass
 	@rm -f 64tass/*.o
+	@rm -f miniz
+	@rm -f bsdiff
+	@rm -f rompack
 
 svf_dump: ../software/application/tester/svf_player.c
 	@echo $@

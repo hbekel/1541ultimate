@@ -36,6 +36,10 @@
 
 class W25Q_Flash : public Flash
 {
+private:
+    void inflate(t_flash_address *address, void *buffer);
+    void inflate_patch(t_flash_address *address, void *buffer);
+    
 protected:
 	int sector_size;
 	int sector_count;

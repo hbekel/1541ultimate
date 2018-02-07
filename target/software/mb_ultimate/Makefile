@@ -22,7 +22,9 @@ SRCS_C   =	mbstart_rtos.c \
             ccsbcs.c \
             ffsyscall.c \
             time.c \
-            sid_coeff.c
+            sid_coeff.c \
+            miniz.c \
+            bspatch.c
 
 SRCS_CC	 =  small_printf.cc \
             stream.cc \

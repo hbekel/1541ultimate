@@ -5,6 +5,7 @@ all: mk3 u2plus
 
 mk3:
 	@$(MAKE) -C tools
+	@$(MAKE) -C roms
 	@$(MAKE) -C target/fpga -f makefile_mb_700a
 	@$(MAKE) -C target/fpga -f makefile_mb_700a_dd
 	@$(MAKE) -C target/software/mb_lwip
@@ -19,6 +20,7 @@ mk3:
 
 mb:
 	@$(MAKE) -C tools
+	@$(MAKE) -C roms
 	@$(MAKE) -C target/software/mb_lwip
 	@$(MAKE) -C target/software/mb_boot
 	@$(MAKE) -C target/software/mb_boot_dd
@@ -51,6 +53,7 @@ u2plus:
 	@touch software/nios_appl_bsp/Makefile
 	@touch software/nios_appl_bsp/public.mk
 	@$(MAKE) -C tools
+	@$(MAKE) -C roms
 	@$(MAKE) -C software/nios_solo_bsp
 	@$(MAKE) -C software/nios_appl_bsp
 	@$(MAKE) -C target/software/nios2_elf_lwip
@@ -127,6 +130,7 @@ u2p_tester:
 
 clean:
 	@$(MAKE) -C tools clean
+	@$(MAKE) -C roms clean
 	@rm -f ./update.bin
 	@rm -f ./update.u2u
 	@rm -f ./revert.u2u

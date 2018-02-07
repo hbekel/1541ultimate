@@ -33,14 +33,16 @@
 typedef struct t_flash_address {
 	uint8_t id;
 	uint8_t has_header;
-	int  start;
-	int  device_addr;
-	int  max_length;
+	int start;
+	int device_addr;
+	int max_length;
+    uint32_t uncompressed_size; // uncompressed size
+    uint8_t base_id;            // id of the base for this patch
 } _flash_address;
 
 class Flash
 {
-public:    
+ public:    
 	static IndexedList<Flash*>* getSupportedFlashTypes() {
     	static IndexedList<Flash*> flash_types(4, NULL);
     	return &flash_types;
