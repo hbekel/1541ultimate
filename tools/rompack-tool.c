@@ -17,6 +17,10 @@ bool ends(const char* str, const char* end) {
           !strcmp(str + strlen(str) - strlen(end), end));
 }
 
+int mz(const struct dirent * entry) {
+  return ends(entry->d_name, ".mz");
+}
+
 void upcase(char* str) {
   if(!str) return;
   
@@ -41,69 +45,28 @@ uint32_t get_uncompressed_size(char *name) {
 }
 
 int main(int argc, char** argv) {
-  DIR* dir;
+
+  argc--; argv++;
+  
+  if(argc != 2) {
+    puts("Usage: rompack <address> <outfile>");
+    goto error;
+  }
+  
+  struct dirent **entries;
   struct dirent* entry;
+  int num_entries;
   struct stat st;
   
-  uint32_t base;
-  uint32_t address;
+  uint32_t address = strtol(argv[0], NULL, 0);
   uint32_t compressed_size;
   uint32_t uncompressed_size;
 
-  bool make_includes = false;
-  bool make_addresses = false;
-  char* filename;
+  char* filename = argv[1];
   char* basename;
   char* name;
   
-  struct option options[] = {
-    { "help",         no_argument,       0, 'h' },
-    { "addresses",    required_argument, 0, 'a' },
-    { "includes",     no_argument,       0, 'i' },
-    { "outfile",      required_argument, 0, 'o' },    
-    { 0, 0, 0, 0 },
-  };
-  int option, option_index;
-  
-  while(1) {
-    option = getopt_long(argc, argv, "ha:io:", options, &option_index);
-
-    if(option == -1)
-      break;
-    
-    switch (option) {
-      
-    case 'h':
-      puts("help!");
-      goto done;
-      break;      
-
-    case 'a':
-      base = strtol(optarg, NULL, 0);
-      address = base;
-      make_addresses = true;
-      break;      
-
-    case 'i':
-      make_includes = true;
-      break;            
-
-    case 'o':
-      filename = strdup(optarg);
-      break;            
-      
-    case '?':
-    case ':':
-    default:
-      goto error;
-    }
-  }
-  
-  argc -= optind;
-  argv += optind;
-
-  dir = opendir (".");
-  if(dir) {
+  if((num_entries = scandir(".", &entries, &mz, alphasort))) {
 
     FILE* out = fopen(filename, "w+");
     if(out == NULL) {
@@ -111,51 +74,44 @@ int main(int argc, char** argv) {
       goto error;
     }
     
-    while((entry = readdir(dir))) {
+    for(int i=0; i<num_entries; i++) {
+      entry = entries[i];
+
       name = strdup(entry->d_name);
-
-      stat(name, &st);
-      compressed_size = st.st_size;
+      puts(name);
       
-      if(ends(name, ".mz")) {
-
-        if(make_addresses) {
+      stat(name, &st);
+      compressed_size = st.st_size;      
         
-          uncompressed_size = get_uncompressed_size(name);
-
-          strstr(name, ".mz")[0] = 0;
+      uncompressed_size = get_uncompressed_size(name);
         
-          basename = strstr(name, "§");
-          if(basename) {
-            basename[0] = 0;
-            basename+=2;          
-          }
-          if(ends(name, ".bin")) strstr(name, ".bin")[0] = 0;
-          if(ends(basename, ".bin")) strstr(basename, ".bin")[0] = 0;
-          
-          upcase(name);
-          upcase(basename);
-          
-          if(basename) {
-            fprintf(out, "{ FLASH_ID_%s, \t0x00, 0x%06X, 0x%06X, 0x%06X, 0x%06X, FLASH_ID_%s },\n",
-                   name, address, address, compressed_size, uncompressed_size, basename);
-          }
-          else {
-            fprintf(out, "{ FLASH_ID_%s, \t0x00, 0x%06X, 0x%06X, 0x%06X, 0x%06X, 0 },\n",
-                   name, address, address, compressed_size, uncompressed_size);
-          }
-          address += compressed_size;
-        }
-        else if(make_includes) {
-          fprintf(out, ".incbin \"%s\"\n", name);
-        }
+      strstr(name, ".mz")[0] = 0;
+      
+      basename = strstr(name, "§");
+      if(basename) {
+        basename[0] = 0;
+        basename+=2;          
       }
+      if(ends(name, ".bin")) strstr(name, ".bin")[0] = 0;
+      if(ends(basename, ".bin")) strstr(basename, ".bin")[0] = 0;
+      
+      upcase(name);
+      upcase(basename);
+      
+      if(basename) {
+        fprintf(out, "{ FLASH_ID_%s, \t0x00, 0x%06X, 0x%06X, 0x%06X, 0x%06X, FLASH_ID_%s },\n",
+                name, address, address, compressed_size, uncompressed_size, basename);
+      }
+      else {
+        fprintf(out, "{ FLASH_ID_%s, \t0x00, 0x%06X, 0x%06X, 0x%06X, 0x%06X, 0 },\n",
+                name, address, address, compressed_size, uncompressed_size);
+      }
+      address += compressed_size;
     }
     fclose(out);
-    closedir(dir);
   }
   else {
-    perror("Couldn't open the directory");
+    perror("Couldn't scan directory");
     goto error;
   }
 

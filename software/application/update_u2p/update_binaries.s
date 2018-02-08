@@ -21,7 +21,7 @@ _ultimate_app_end:
 .global _rom_pack_start
 .type _rom_pack_start, @object
 _rom_pack_start:
-.include "rom_pack_includes_u2p.inc"
+.incbin "rom_pack.bin"
 .global _rom_pack_end
 _rom_pack_end:
 
