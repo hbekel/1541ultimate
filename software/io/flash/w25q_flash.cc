@@ -3,6 +3,9 @@
 #include "miniz.h"
 #include "bspatch.h"
 
+#include "FreeRTOS.h"
+#include "task.h"
+
 extern "C" {
     #include "small_printf.h"
 }
@@ -239,6 +242,10 @@ int W25Q_Flash :: read_image(int id, void *buffer, int buf_size)
 	while(a->id != FLASH_ID_LIST_END) {
 		if(int(a->id) == id) {
 			int len = (a->max_length > buf_size) ? buf_size : a->max_length;
+
+#ifndef RECOVERYAPP
+            uint64_t start = xTaskGetTickCount();
+#endif
             
 			if(!a->uncompressed_size) {
                 printf("reading uncompressed flash image %b...\n", a->id);
@@ -252,6 +259,10 @@ int W25Q_Flash :: read_image(int id, void *buffer, int buf_size)
                 printf("read compressed and patched flash image %b...\n", a->id);
                 inflate_patch(a, buffer);
             }
+#ifndef RECOVERYAPP
+            uint64_t stop = xTaskGetTickCount();
+            printf("TOOK %dms\n", (stop - start) * portTICK_PERIOD_MS);
+#endif
 			return len;
 		}
 		a++;
