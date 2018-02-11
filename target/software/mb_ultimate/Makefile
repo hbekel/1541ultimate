@@ -89,6 +89,7 @@ SRCS_CC	 =  small_printf.cc \
 			filetype_crt.cc \
 			filetype_sid.cc \
 			filetype_bin.cc \
+			filetype_zmn.cc \
             host_stream.cc \
             keyboard_vt100.cc \
             screen_vt100.cc \

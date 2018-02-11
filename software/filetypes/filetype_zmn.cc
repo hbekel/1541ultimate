@@ -154,7 +154,7 @@ int FileTypeZMachine :: view(SubsysCommand *cmd) {
     inform = (isdigit(inflib[0]) && inflib[1] == '.' &&
               isdigit(inflib[2]) && isdigit(inflib[3]));
     
-    snprintf(info, 0x0400,
+    sprintf(info,
              "Z-Machine version : %d\n"
              "Release/Serial    : %d/%s\n"
              "Inform Library    : %s\n"             
