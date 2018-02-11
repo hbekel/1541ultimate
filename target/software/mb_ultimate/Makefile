@@ -90,6 +90,7 @@ SRCS_CC	 =  small_printf.cc \
 			filetype_sid.cc \
 			filetype_bin.cc \
 			filetype_cfg.cc \
+			filetype_zmn.cc \
             host_stream.cc \
             keyboard_vt100.cc \
             screen_vt100.cc \
@@ -178,4 +179,3 @@ $(PATH_SW)/6502/sidcrt/target/muscrt.bin::
 
 $(PATH_SW)/6502/sidcrt/target/musplayer.bin::
 	make -C $(PATH_SW)/6502/sidcrt
-
