@@ -3,9 +3,9 @@
  *
  * Plays Z-Machine story files using the original interpreters.
  * Written by Henning Bekel <h.bekel@googlemail.com>
- * Based on work by Christopher Kobayashi <chris@disavowed.jp> 
+ * Based on work by Christopher Kobayashi <chris@disavowed.jp>
  *
- * This file is part of the 1541 Ultimate-II application, written by 
+ * This file is part of the 1541 Ultimate-II application, written by
  *    Gideon Zweijtzer <info@1541ultimate.net>
  *    Daniel Kahlin <daniel@kahlin.net>
  *
@@ -57,13 +57,13 @@ FileTypeZMachine :: ~FileTypeZMachine()
 int FileTypeZMachine :: fetch_context_items(IndexedList<Action *> &list)
 {
 	int count = 0;
-    
-	if (!c64->exists()) {
+
+	if (!C64::getMachine()->exists()) {
 		return count;
 	}
 
 	list.append(new Action("Run",  FileTypeZMachine :: execute_st, ZMACHINE_FILE_RUN, 0));
-    list.append(new Action("View", FileTypeZMachine :: execute_st, ZMACHINE_FILE_VIEW, 0));
+	list.append(new Action("View", FileTypeZMachine :: execute_st, ZMACHINE_FILE_VIEW, 0));
 	count += 2;
 
     return count;
@@ -74,7 +74,7 @@ FileType *FileTypeZMachine :: test_type(BrowsableDirEntry *obj)
 {
 	FileInfo *inf = obj->getInfo();
 
-    if(strncasecmp(inf->extension, "Z3",  2) == 0 ||       
+    if(strncasecmp(inf->extension, "Z3",  2) == 0 ||
        strncasecmp(inf->extension, "Z4",  2) == 0 ||
        strncasecmp(inf->extension, "Z5",  2) == 0) {
         return new FileTypeZMachine(obj);
@@ -102,17 +102,17 @@ int FileTypeZMachine :: execute_st(SubsysCommand *cmd)
 int FileTypeZMachine :: view(SubsysCommand *cmd) {
 
     int result = false;
-    
+
     UserInterface *ui = cmd->user_interface;
     FileManager *fm = FileManager :: getFileManager();
     Path *path = fm->get_new_path("Z-Machine");
     path->cd(cmd->path.c_str());
-    
+
     FRESULT fres;
     File *file = 0;
     uint32_t transferred;
     const char *filename = cmd->filename.c_str();
-    
+
     uint32_t size;
     uint8_t header_size = 0x41;
     uint8_t header[header_size];
@@ -120,20 +120,20 @@ int FileTypeZMachine :: view(SubsysCommand *cmd) {
     uint8_t zversion;
     uint16_t version;
     uint16_t checksum;
-    uint16_t resident_size;    
+    uint16_t resident_size;
 
     char *info = new char[0x1000];
     char *serial;
     char *inflib;
     bool inform = false;
-    
+
     if((fres = fm->fopen(path, filename, FA_READ, &file)) != FR_OK) {
         ui->popup("Couldn't open file!", BUTTON_OK);
         printf("Z: Failed to open [%s]: %s\n", filename, FileSystem :: get_error_string(fres));
         goto done;
     }
     size = file->get_size();
-    
+
     if((fres = file->read(header, header_size, &transferred)) != FR_OK) {
         printf("Z: Failed to read [%s]: %s\n", filename, FileSystem :: get_error_string(fres));
         ui->popup("Couldn't read file!", BUTTON_OK);
@@ -141,25 +141,25 @@ int FileTypeZMachine :: view(SubsysCommand *cmd) {
         goto done;
     }
     fm->fclose(file);
-    
+
     zversion = header[0];
     version = header[2] * 256 + header[3];
-    resident_size = header[4] * 256 + header[5];    
+    resident_size = header[4] * 256 + header[5];
     checksum = header[0x1c] * 256 + header[0x1d];
     serial = (char*) (header + 0x12);
     header[0x12+6] = '\0';
     inflib = (char*) (header + 0x3C);
     header[0x40] = '\0';
-    
+
     inform = (isdigit(inflib[0]) && inflib[1] == '.' &&
               isdigit(inflib[2]) && isdigit(inflib[3]));
-    
+
     sprintf(info,
              "Z-Machine version : %d\n"
              "Release/Serial    : %d/%s\n"
-             "Inform Library    : %s\n"             
+             "Inform Library    : %s\n"
              "\n"
-             "File size         : %d bytes\n"             
+             "File size         : %d bytes\n"
              "Checksum          : %d\n"
              "\n"
              "Resident size     : $%04X\n",
@@ -167,8 +167,8 @@ int FileTypeZMachine :: view(SubsysCommand *cmd) {
              inform ? inflib : "none",
              size, checksum, resident_size);
 
-    ui->run_editor(info);    
-    
+    ui->run_editor(info);
+
  done:
     if(info) delete info;
     fm->release_path(path);
@@ -176,9 +176,9 @@ int FileTypeZMachine :: view(SubsysCommand *cmd) {
 }
 
 int FileTypeZMachine :: run(SubsysCommand *cmd)
-{ 
+{
     int result = false;
-    
+
     UserInterface *ui = cmd->user_interface;
     FileManager *fm = FileManager :: getFileManager();
     Path *path = fm->get_new_path("Z-Machine");
@@ -188,7 +188,7 @@ int FileTypeZMachine :: run(SubsysCommand *cmd)
     File *file = 0;
     uint32_t transferred;
     const char *filename = cmd->filename.c_str();
-    
+
     uint8_t* data = NULL;
     uint8_t* prg = NULL;
 
@@ -198,7 +198,7 @@ int FileTypeZMachine :: run(SubsysCommand *cmd)
     uint32_t offset = 0;
 
     SubsysCommand* dmaload = NULL;
-    
+
     if((fres = fm->fopen(path, filename, FA_READ, &file)) != FR_OK) {
         ui->popup("Couldn't open file!", BUTTON_OK);
         printf("Z: Failed to open [%s]: %s\n", filename, FileSystem :: get_error_string(fres));
@@ -218,7 +218,7 @@ int FileTypeZMachine :: run(SubsysCommand *cmd)
 
     version = data[0];
     resident_size = (data[4]+1) * 256;
-    
+
     printf("Z: [%s] version %d, %d bytes\n", filename, version, size);
 
     if(version < 3 || version > 5) {
@@ -226,16 +226,16 @@ int FileTypeZMachine :: run(SubsysCommand *cmd)
         ui->popup("Not a version 3, 4 or 5 story file!", BUTTON_OK);
         goto done;
     }
-    
+
     prg = new uint8_t[0x10000];
 
     if(version > 3) {
       resident_size = 0xAF00;
     }
-    
+
     switch(version) {
 
-    case 3:      
+    case 3:
       offset = 0x2e00;
       memcpy(prg, sys3, 14);
       memcpy(prg + 0x0e00 - 0x0801 + 2, i3, 8192);
@@ -243,15 +243,15 @@ int FileTypeZMachine :: run(SubsysCommand *cmd)
       color3(prg, 0x05, 0x00, 0x05, 0x05);
       break;
 
-    case 4:  
+    case 4:
       offset = 0x3a00;
       memcpy(prg, sys4, 14);
       memcpy(prg + 0x1000 - 0x0801 + 2, i4, 10752);
       memcpy(prg + offset - 0x0801 + 2, data, resident_size);
       color4(prg, 0x05, 0x00, 0x05, 0x05);
       break;
-      
-    case 5:  
+
+    case 5:
       offset = 0x3f00;
       memcpy(prg, sys5, 14);
       memcpy(prg + 0x1000 - 0x0801 + 2, i5, 12032);
@@ -261,7 +261,7 @@ int FileTypeZMachine :: run(SubsysCommand *cmd)
 
     default:
       goto done;
-    }      
+    }
 
     for(uint32_t i=0; i<size-resident_size; i++) {
         ((uint8_t*) REU_MEMORY_BASE)[i] = data[resident_size+i];
@@ -271,11 +271,11 @@ int FileTypeZMachine :: run(SubsysCommand *cmd)
                                 C64_DMA_BUFFER, RUNCODE_DMALOAD_RUN,
                                 prg, resident_size + offset - 0x0801 + 2);
     dmaload->execute();
-    
+
     result = true;
 
  done:
-    fm->release_path(path);    
+    fm->release_path(path);
     if(data) delete data;
     if(prg) delete prg;
     return result;

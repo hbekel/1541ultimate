@@ -97,10 +97,7 @@ SRCS_CC	 =  u2p_init.cc \
 			filetype_crt.cc \
 			filetype_sid.cc \
 			filetype_bin.cc \
-<<<<<<< HEAD
 			filetype_cfg.cc \
-=======
->>>>>>> d6c1cdc55ea3ff3f201bd0df6dd275130db12d52
 			filetype_zmn.cc \
 			host_stream.cc \
 			keyboard_vt100.cc \
